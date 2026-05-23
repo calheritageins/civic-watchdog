@@ -124,7 +124,7 @@ const stateAbbr =
   stateCode ? stateMap[stateCode] : null;
 
 let representative = null;
-let senators = [];
+let senators: Awaited<ReturnType<typeof prisma.representative.findMany>> = [];
 
 if (stateAbbr && congressionalDistrict) {
   representative = await prisma.representative.findFirst({
