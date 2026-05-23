@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model UserAddress {
+  id                    Int      @id @default(autoincrement())
+  fullName              String?
+  address1              String
+  city                  String
+  state                 String
+  zip                   String
+  matchedAddress        String?
+  congressionalDistrict String?
+  stateCode             String?
+  createdAt             DateTime @default(now())
+
+  votes                 UserBillVote[]
+}
+
+model Representative {
+  id         Int      @id @default(autoincrement())
+  bioguideId String?
+  stateCode  String
+  district   String
+  fullName   String
+  chamber    String
+  party      String?
+  website    String?
+  phone      String?
+  createdAt  DateTime @default(now())
+
+  billVotes  RepresentativeBillVote[]
+
+  @@unique([stateCode, district, chamber, fullName])
+}
+
+model Bill {
+  id          Int      @id @default(autoincrement())
+  congress    Int
+  billType    String
+  billNumber  String
+  title       String
+  summary     String?
+  status      String?
+  sourceUrl   String?
+  createdAt   DateTime @default(now())
+
+  votes       UserBillVote[]
+  representativeVotes RepresentativeBillVote[]
+
+  @@unique([congress, billType, billNumber])
+}
+
+model UserBillVote {
+  id            Int      @id @default(autoincrement())
+  userAddressId Int
+  billId        Int
+  position      String
+  createdAt     DateTime @default(now())
+
+  userAddress   UserAddress @relation(fields: [userAddressId], references: [id])
+  bill          Bill        @relation(fields: [billId], references: [id])
+
+  @@unique([userAddressId, billId])
+}
+
+model RepresentativeBillVote {
+  id               Int      @id @default(autoincrement())
+  representativeId Int
+  billId           Int
+  position         String
+  createdAt        DateTime @default(now())
+
+  representative   Representative @relation(fields: [representativeId], references: [id])
+  bill             Bill           @relation(fields: [billId], references: [id])
+
+  @@unique([representativeId, billId])
+}
