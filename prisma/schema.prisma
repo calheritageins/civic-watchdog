@@ -7,7 +7,7 @@ model UserProfile {
   email     String?
   fullName  String?
   createdAt DateTime @default(now())
-
+addresses UserAddress[]
   votes     UserBillVote[]
 }
 datasource db {
@@ -25,7 +25,8 @@ model UserAddress {
   congressionalDistrict String?
   stateCode             String?
   createdAt             DateTime @default(now())
-
+userProfileId Int?
+userProfile   UserProfile? @relation(fields: [userProfileId], references: [id])
  
 }
 
@@ -56,7 +57,8 @@ model Bill {
   status      String?
   sourceUrl   String?
   createdAt   DateTime @default(now())
-
+aiSummary     String?
+aiGeneratedAt DateTime?
   votes       UserBillVote[]
   representativeVotes RepresentativeBillVote[]
 

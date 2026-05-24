@@ -25,6 +25,7 @@ type Bill = {
   billNumber: string;
   title: string;
   summary: string | null;
+  aiSummary: string | null;
   status: string | null;
 };
 
@@ -323,6 +324,17 @@ export default function Home() {
                   <p className="mt-3 text-gray-700">
                     {bill.summary || "No summary available yet."}
                   </p>
+                  {bill.aiSummary && (
+  <div className="mt-4 rounded bg-blue-50 p-4 border border-blue-200">
+    <p className="text-sm font-bold text-blue-900">
+      AI Summary
+    </p>
+
+    <p className="mt-2 whitespace-pre-wrap text-gray-800">
+      {bill.aiSummary}
+    </p>
+  </div>
+)}
 
                   <p className="mt-3">
                     <strong>Status:</strong> {bill.status}
