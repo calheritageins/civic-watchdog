@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { NextResponse } from "next/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL!,
@@ -8,64 +9,6 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-export async function POST(request: Request) {
-  const body = await request.json();
-
-  const street = encodeURIComponent(body.address1);
-  const city = encodeURIComponent(body.city);
-  const state = encodeURIComponent(body.state);
-  const zip = encodeURIComponent(body.zip);
-
-  const censusUrl =
-    `https://geocoding.geo.census.gov/geocoder/geographies/address` +
-    `?street=${street}` +
-    `&city=${city}` +
-    `&state=${state}` +
-    `&zip=${zip}` +
-    `&benchmark=Public_AR_Current` +
-    `&vintage=Current_Current` +
-    `&format=json`;
-
-  const censusResponse = await fetch(censusUrl);
-  const censusData = await censusResponse.json();
-
-  console.log(JSON.stringify(censusData, null, 2));
-
-  let matchedAddress: string | null = null;
-  let congressionalDistrict: string | null = null;
-  let stateCode: string | null = null;
-
-  const matches = censusData?.result?.addressMatches || [];
-
-  if (matches.length > 0) {
-    const firstMatch = matches[0];
-
-    matchedAddress = firstMatch.matchedAddress || null;
-
-    const geographies = firstMatch?.geographies || {};
-
-    const districtInfo =
-      geographies["119th Congressional Districts"]?.[0] ||
-      geographies["118th Congressional Districts"]?.[0] ||
-      geographies["Congressional Districts"]?.[0];
-
-    if (districtInfo) {
-     congressionalDistrict =
-  districtInfo.CD119 ||
-  districtInfo.CD118 ||
-  districtInfo.CD116 ||
-  districtInfo.CD ||
-  districtInfo.BASENAME ||
-  districtInfo.NAME ||
-  districtInfo.GEOID ||
-  null;
-
-      stateCode =
-        districtInfo.STATEFP ||
-        districtInfo.STATE ||
-        null;
-    }
-  }
 const stateMap: Record<string, string> = {
   "01": "AL",
   "02": "AK",
@@ -120,31 +63,126 @@ const stateMap: Record<string, string> = {
   "56": "WY",
 };
 
-const stateAbbr =
-  stateCode ? stateMap[stateCode] : null;
+async function getOrCreateUserProfile() {
+  const { userId } = await auth();
 
-let representative = null;
-let senators: Awaited<ReturnType<typeof prisma.representative.findMany>> = [];
+  if (!userId) return null;
 
-if (stateAbbr && congressionalDistrict) {
-  representative = await prisma.representative.findFirst({
+  const clerkUser = await currentUser();
+
+  let userProfile = await prisma.userProfile.findUnique({
     where: {
-      stateCode: stateAbbr,
-      district: congressionalDistrict,
-      chamber: "House",
+      clerkId: userId,
     },
   });
 
-  senators = await prisma.representative.findMany({
-    where: {
-      stateCode: stateAbbr,
-      chamber: "Senate",
-    },
-  });
+  if (!userProfile) {
+    userProfile = await prisma.userProfile.create({
+      data: {
+        clerkId: userId,
+        email:
+          clerkUser?.emailAddresses?.[0]?.emailAddress ||
+          null,
+        fullName:
+          `${clerkUser?.firstName || ""} ${clerkUser?.lastName || ""}`.trim() ||
+          null,
+      },
+    });
+  }
+
+  return userProfile;
 }
+
+export async function POST(request: Request) {
+  const body = await request.json();
+
+  const street = encodeURIComponent(body.address1);
+  const city = encodeURIComponent(body.city);
+  const state = encodeURIComponent(body.state);
+  const zip = encodeURIComponent(body.zip);
+
+  const censusUrl =
+    `https://geocoding.geo.census.gov/geocoder/geographies/address` +
+    `?street=${street}` +
+    `&city=${city}` +
+    `&state=${state}` +
+    `&zip=${zip}` +
+    `&benchmark=Public_AR_Current` +
+    `&vintage=Current_Current` +
+    `&format=json`;
+
+  const censusResponse = await fetch(censusUrl);
+  const censusData = await censusResponse.json();
+
+  let matchedAddress: string | null = null;
+  let congressionalDistrict: string | null = null;
+  let stateCode: string | null = null;
+
+  const matches = censusData?.result?.addressMatches || [];
+
+  if (matches.length > 0) {
+    const firstMatch = matches[0];
+
+    matchedAddress = firstMatch.matchedAddress || null;
+
+    const geographies = firstMatch?.geographies || {};
+
+    const districtInfo =
+      geographies["119th Congressional Districts"]?.[0] ||
+      geographies["118th Congressional Districts"]?.[0] ||
+      geographies["Congressional Districts"]?.[0];
+
+    if (districtInfo) {
+      congressionalDistrict =
+        districtInfo.CD119 ||
+        districtInfo.CD118 ||
+        districtInfo.CD116 ||
+        districtInfo.CD ||
+        districtInfo.BASENAME ||
+        districtInfo.NAME ||
+        districtInfo.GEOID ||
+        null;
+
+      stateCode =
+        districtInfo.STATEFP ||
+        districtInfo.STATE ||
+        null;
+    }
+  }
+
+  const stateAbbr = stateCode ? stateMap[stateCode] : null;
+
+  let representative = null;
+  let senators: Awaited<
+    ReturnType<typeof prisma.representative.findMany>
+  > = [];
+
+  if (stateAbbr && congressionalDistrict) {
+    representative = await prisma.representative.findFirst({
+      where: {
+        stateCode: stateAbbr,
+        district: congressionalDistrict,
+        chamber: "House",
+      },
+    });
+
+    senators = await prisma.representative.findMany({
+      where: {
+        stateCode: stateAbbr,
+        chamber: "Senate",
+      },
+    });
+  }
+
+  const userProfile = await getOrCreateUserProfile();
+
   const saved = await prisma.userAddress.create({
     data: {
-      fullName: body.fullName || null,
+      userProfileId: userProfile?.id || null,
+      fullName:
+        body.fullName ||
+        userProfile?.fullName ||
+        null,
       address1: body.address1,
       city: body.city,
       state: body.state,
@@ -155,10 +193,10 @@ if (stateAbbr && congressionalDistrict) {
     },
   });
 
-return NextResponse.json({
-  message: "Address saved successfully.",
-  saved,
-  representative,
-  senators,
-});
+  return NextResponse.json({
+    message: "Address saved successfully.",
+    saved,
+    representative,
+    senators,
+  });
 }

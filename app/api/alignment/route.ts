@@ -9,27 +9,91 @@ const adapter = new PrismaPg({
 
 const prisma = new PrismaClient({ adapter });
 
-function userMatchesRep(
-  userPosition: string,
-  repPosition: string
-) {
+function userMatchesRep(userPosition: string, repPosition: string) {
   if (
     userPosition === "Support" &&
-    (repPosition === "Yea" ||
-      repPosition === "Support")
+    (repPosition === "Yea" || repPosition === "Support")
   ) {
     return true;
   }
 
   if (
     userPosition === "Oppose" &&
-    (repPosition === "Nay" ||
-      repPosition === "Oppose")
+    (repPosition === "Nay" || repPosition === "Oppose")
   ) {
     return true;
   }
 
   return false;
+}
+
+async function calculateAlignment(
+  representativeId: number,
+  userProfileId: number
+) {
+  const representative = await prisma.representative.findUnique({
+    where: {
+      id: representativeId,
+    },
+  });
+
+  if (!representative) return null;
+
+  const userVotes = await prisma.userBillVote.findMany({
+    where: {
+      userProfileId,
+      position: {
+        not: "Unsure",
+      },
+    },
+  });
+
+  const totalTrackedBills = await prisma.representativeBillVote.count({
+    where: {
+      representativeId,
+    },
+  });
+
+  let comparableVotes = 0;
+  let matchingVotes = 0;
+
+  for (const userVote of userVotes) {
+    const repVote = await prisma.representativeBillVote.findUnique({
+      where: {
+        representativeId_billId: {
+          representativeId: representative.id,
+          billId: userVote.billId,
+        },
+      },
+    });
+
+    if (!repVote) continue;
+
+    comparableVotes++;
+
+    const matched = userMatchesRep(userVote.position, repVote.position);
+
+    if (matched) matchingVotes++;
+  }
+
+  const alignmentPercent =
+    comparableVotes === 0
+      ? 0
+      : Math.round((matchingVotes / comparableVotes) * 100);
+
+  const participationPercent =
+    totalTrackedBills === 0
+      ? 0
+      : Math.round((comparableVotes / totalTrackedBills) * 100);
+
+  return {
+    representative,
+    comparableVotes,
+    matchingVotes,
+    alignmentPercent,
+    participationPercent,
+    totalTrackedBills,
+  };
 }
 
 export async function GET() {
@@ -43,12 +107,11 @@ export async function GET() {
       );
     }
 
-    const userProfile =
-      await prisma.userProfile.findUnique({
-        where: {
-          clerkId: userId,
-        },
-      });
+    const userProfile = await prisma.userProfile.findUnique({
+      where: {
+        clerkId: userId,
+      },
+    });
 
     if (!userProfile) {
       return NextResponse.json(
@@ -57,17 +120,13 @@ export async function GET() {
       );
     }
 
-    const latestAddress =
-      await prisma.userAddress.findFirst({
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+    const latestAddress = await prisma.userAddress.findFirst({
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
-    if (
-      !latestAddress?.stateCode ||
-      !latestAddress?.congressionalDistrict
-    ) {
+    if (!latestAddress?.stateCode || !latestAddress?.congressionalDistrict) {
       return NextResponse.json(
         { error: "District not found" },
         { status: 404 }
@@ -78,92 +137,36 @@ export async function GET() {
       "06": "CA",
     };
 
-    const stateAbbr =
-      stateMap[latestAddress.stateCode];
+    const stateAbbr = stateMap[latestAddress.stateCode];
 
-    const representative =
-      await prisma.representative.findFirst({
-        where: {
-          stateCode: stateAbbr,
-          district:
-            latestAddress.congressionalDistrict,
-          chamber: "House",
-        },
-      });
+    const representatives = await prisma.representative.findMany({
+      where: {
+        OR: [
+          {
+            chamber: "House",
+            stateCode: stateAbbr,
+            district: latestAddress.congressionalDistrict,
+          },
+          {
+            chamber: "Senate",
+            stateCode: stateAbbr,
+          },
+        ],
+      },
+    });
 
-    if (!representative) {
-      return NextResponse.json(
-        { error: "Representative not found" },
-        { status: 404 }
-      );
+    const alignments = [];
+
+    for (const rep of representatives) {
+      const alignment = await calculateAlignment(rep.id, userProfile.id);
+
+      if (alignment) {
+        alignments.push(alignment);
+      }
     }
-
-    const userVotes =
-      await prisma.userBillVote.findMany({
-        where: {
-          userProfileId: userProfile.id,
-          position: {
-            not: "Unsure",
-          },
-        },
-      });
-
-    let comparableVotes = 0;
-    let matchingVotes = 0;
-
-    const comparisons = [];
-
-    for (const userVote of userVotes) {
-      const repVote =
-        await prisma.representativeBillVote.findUnique({
-          where: {
-            representativeId_billId: {
-              representativeId:
-                representative.id,
-              billId: userVote.billId,
-            },
-          },
-          include: {
-            bill: true,
-          },
-        });
-
-      if (!repVote) continue;
-
-      comparableVotes++;
-
-      const matched = userMatchesRep(
-        userVote.position,
-        repVote.position
-      );
-
-      if (matched) matchingVotes++;
-
-      comparisons.push({
-        billId: userVote.billId,
-        billTitle: repVote.bill.title,
-        userPosition: userVote.position,
-        representativePosition:
-          repVote.position,
-        matched,
-      });
-    }
-
-    const alignmentPercent =
-      comparableVotes === 0
-        ? 0
-        : Math.round(
-            (matchingVotes /
-              comparableVotes) *
-              100
-          );
 
     return NextResponse.json({
-      representative,
-      comparableVotes,
-      matchingVotes,
-      alignmentPercent,
-      comparisons,
+      alignments,
     });
   } catch (error) {
     console.error(error);

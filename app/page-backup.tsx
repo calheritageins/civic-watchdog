@@ -194,12 +194,11 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#06111f] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,204,21,0.06),transparent_30%)]" />
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between rounded-3xl border border-white/10 bg-[#071827]/90 p-6 shadow-2xl backdrop-blur">
+    <main className="min-h-screen bg-gray-100 p-8">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-6 flex items-center justify-between rounded bg-white p-4 shadow">
           <div>
-            <h1 className="text-3xl font-black tracking-tight">Civic Watchdog</h1>
+            <h1 className="text-2xl font-bold">Civic Watchdog</h1>
             <p className="text-sm text-gray-600">
               Track your representatives, bills, votes, and alignment.
             </p>
@@ -209,7 +208,7 @@ export default function Home() {
             {!isSignedIn && (
               <>
                 <SignInButton mode="modal">
-                  <button className="rounded-2xl bg-yellow-400 font-bold text-black shadow-lg shadow-yellow-400/20 transition hover:scale-[1.02] px-4 py-2 text-white">
+                  <button className="rounded bg-black px-4 py-2 text-white">
                     Sign In
                   </button>
                 </SignInButton>
@@ -228,14 +227,14 @@ export default function Home() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-3xl border border-white/10 bg-[#071827]/90 p-8 shadow-2xl backdrop-blur"
+          className="rounded bg-white p-6 shadow"
         >
           <h1 className="mb-6 text-4xl font-bold">Find My Representatives</h1>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="flex flex-col gap-4">
             <input
               placeholder="Full Name"
-              className="rounded-2xl border border-white/10 bg-[#081a2e] p-4 text-white placeholder:text-white/40 focus:border-yellow-400/40 focus:outline-none"
+              className="border p-3"
               value={form.fullName}
               onChange={(e) =>
                 setForm({ ...form, fullName: e.target.value })
@@ -272,7 +271,7 @@ export default function Home() {
               onChange={(e) => setForm({ ...form, zip: e.target.value })}
             />
 
-            <button type="submit" className="rounded-2xl bg-yellow-400 font-bold text-black shadow-lg shadow-yellow-400/20 transition hover:scale-[1.02] p-3 text-white">
+            <button type="submit" className="rounded bg-black p-3 text-white">
               Lookup Representatives
             </button>
           </div>
@@ -283,13 +282,13 @@ export default function Home() {
             {alignment.alignments.map((item) => (
               <div
                 key={item.representative.fullName}
-                className="rounded border border-yellow-400/20 bg-[#081a2e] p-6 shadow"
+                className="rounded border border-yellow-300 bg-yellow-100 p-6 shadow"
               >
-                <h2 className="text-3xl font-black tracking-tight">
+                <h2 className="text-2xl font-bold">
                   {item.representative.fullName}
                 </h2>
 
-                <p className="mt-1 text-sm text-white/60">
+                <p className="mt-1 text-sm text-gray-700">
                   {item.representative.chamber} •{" "}
                   {item.representative.party || "N/A"}
                 </p>
@@ -314,8 +313,8 @@ export default function Home() {
         ) : null}
 
         {representative && (
-          <div className="rounded-3xl border border-white/10 bg-[#081a2e] p-6 shadow-xl">
-            <h2 className="text-3xl font-black tracking-tight">
+          <div className="mt-6 rounded bg-white p-6 shadow">
+            <h2 className="mb-4 text-2xl font-bold">
               Your House Representative
             </h2>
 
@@ -333,7 +332,7 @@ export default function Home() {
               {representative.phone && (
                 <a
                   href={`tel:${representative.phone}`}
-                  className="rounded-2xl bg-green-600 font-semibold transition hover:scale-[1.02] px-4 py-2 text-white"
+                  className="rounded bg-green-600 px-4 py-2 text-white"
                 >
                   Call Office
                 </a>
@@ -353,8 +352,8 @@ export default function Home() {
         )}
 
         {senators.length > 0 && (
-          <div className="rounded-3xl border border-white/10 bg-[#081a2e] p-6 shadow-xl">
-            <h2 className="mb-4 text-3xl font-black tracking-tight">Your U.S. Senators</h2>
+          <div className="mt-6 rounded bg-white p-6 shadow">
+            <h2 className="mb-4 text-2xl font-bold">Your U.S. Senators</h2>
 
             <div className="grid gap-4">
               {senators.map((senator) => (
@@ -373,7 +372,7 @@ export default function Home() {
                     {senator.phone && (
                       <a
                         href={`tel:${senator.phone}`}
-                        className="rounded-2xl bg-green-600 font-semibold transition hover:scale-[1.02] px-4 py-2 text-white"
+                        className="rounded bg-green-600 px-4 py-2 text-white"
                       >
                         Call Office
                       </a>
@@ -396,7 +395,7 @@ export default function Home() {
         )}
 
         {bills.length > 0 && (
-          <div className="rounded-3xl border border-white/10 bg-[#081a2e] p-6 shadow-xl">
+          <div className="mt-6 rounded bg-white p-6 shadow">
             <h2 className="mb-6 text-2xl font-bold">Active Bills</h2>
 
             <div className="grid gap-6">
@@ -408,17 +407,17 @@ export default function Home() {
 
                   <h3 className="mt-1 text-2xl font-bold">{bill.title}</h3>
 
-                  <p className="mt-3 text-white/70">
+                  <p className="mt-3 text-gray-700">
                     {bill.summary || "No summary available yet."}
                   </p>
 
                   {bill.aiSummary && (
-                    <div className="mt-4 rounded-2xl border border-blue-400/20 bg-[#0b1d33] p-5">
-                      <p className="text-sm font-bold text-blue-300">
+                    <div className="mt-4 rounded border border-blue-200 bg-blue-50 p-4">
+                      <p className="text-sm font-bold text-blue-900">
                         AI Summary
                       </p>
 
-                      <p className="mt-2 whitespace-pre-wrap text-white/80">
+                      <p className="mt-2 whitespace-pre-wrap text-gray-800">
                         {bill.aiSummary}
                       </p>
                     </div>
@@ -429,33 +428,30 @@ export default function Home() {
                   </p>
 
                   {userVotes[bill.id] && editingVoteBillId !== bill.id ? (
-                    <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
-  <p className="font-semibold text-white">
-    Your vote:{" "}
-    <span className="text-yellow-300">
-      {userVotes[bill.id]}
-    </span>
-  </p>
+                    <div className="mt-5 rounded bg-gray-100 p-4">
+                      <p className="font-semibold">
+                        Your vote: {userVotes[bill.id]}
+                      </p>
 
-  <button
-    onClick={() => setEditingVoteBillId(bill.id)}
-    className="mt-3 rounded-2xl bg-yellow-400 px-4 py-2 font-bold text-black shadow-lg shadow-yellow-400/20 transition hover:scale-[1.02]"
-  >
-    Edit Vote
-  </button>
-</div>
+                      <button
+                        onClick={() => setEditingVoteBillId(bill.id)}
+                        className="mt-3 rounded bg-black px-4 py-2 text-white"
+                      >
+                        Edit Vote
+                      </button>
+                    </div>
                   ) : (
                     <div className="mt-5 flex gap-3">
                       <button
                         onClick={() => submitVote(bill.id, "Support")}
-                        className="rounded-2xl bg-green-600 font-semibold transition hover:scale-[1.02] px-4 py-2 text-white"
+                        className="rounded bg-green-600 px-4 py-2 text-white"
                       >
                         Support
                       </button>
 
                       <button
                         onClick={() => submitVote(bill.id, "Oppose")}
-                        className="rounded-2xl bg-red-600 font-semibold transition hover:scale-[1.02] px-4 py-2 text-white"
+                        className="rounded bg-red-600 px-4 py-2 text-white"
                       >
                         Oppose
                       </button>
