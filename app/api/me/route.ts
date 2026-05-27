@@ -57,23 +57,26 @@ export async function GET() {
     const stateAbbr =
       stateMap[latestAddress.stateCode || ""];
 
-    const representative =
-      await prisma.representative.findFirst({
-        where: {
-          chamber: "House",
-          stateCode: stateAbbr,
-          district:
-            latestAddress.congressionalDistrict,
-        },
-      });
+    let representative = null;
 
-    const senators =
-      await prisma.representative.findMany({
-        where: {
-          chamber: "Senate",
-          stateCode: stateAbbr,
-        },
-      });
+if (stateAbbr && latestAddress.congressionalDistrict) {
+  representative = await prisma.representative.findFirst({
+    where: {
+      chamber: "House",
+      stateCode: stateAbbr,
+      district: latestAddress.congressionalDistrict,
+    },
+  });
+}
+
+    const senators = stateAbbr
+  ? await prisma.representative.findMany({
+      where: {
+        chamber: "Senate",
+        stateCode: stateAbbr,
+      },
+    })
+  : [];
 
     const votes =
       await prisma.userBillVote.findMany({
