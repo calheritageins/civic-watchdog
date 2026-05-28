@@ -11,6 +11,9 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({ adapter });
 
 type Legislator = {
+  id?: {
+    bioguide?: string;
+  };
   name: {
     first?: string;
     middle?: string;
@@ -53,6 +56,7 @@ async function run() {
     if (!currentTerm) continue;
 
     const fullName = getFullName(person);
+    const bioguideId = person.id?.bioguide || null;
 
     if (currentTerm.type === "rep") {
       const district =
@@ -73,6 +77,7 @@ async function run() {
           party: currentTerm.party || null,
           website: currentTerm.url || null,
           phone: currentTerm.phone || null,
+          bioguideId,
         },
         create: {
           stateCode: currentTerm.state,
@@ -82,6 +87,7 @@ async function run() {
           party: currentTerm.party || null,
           website: currentTerm.url || null,
           phone: currentTerm.phone || null,
+          bioguideId,
         },
       });
 
@@ -102,6 +108,7 @@ async function run() {
           party: currentTerm.party || null,
           website: currentTerm.url || null,
           phone: currentTerm.phone || null,
+          bioguideId,
         },
         create: {
           stateCode: currentTerm.state,
@@ -111,6 +118,7 @@ async function run() {
           party: currentTerm.party || null,
           website: currentTerm.url || null,
           phone: currentTerm.phone || null,
+          bioguideId,
         },
       });
 

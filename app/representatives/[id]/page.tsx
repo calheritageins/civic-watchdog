@@ -25,7 +25,8 @@ export default async function RepresentativePage({ params }: PageProps) {
 
   if (!representative) {
     return (
-      <main className="min-h-screen bg-gray-100 p-8">
+      <main className="relative min-h-screen overflow-hidden bg-[#06111f] text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,204,21,0.06),transparent_30%)]" />
         <div className="mx-auto max-w-4xl rounded bg-white p-6 shadow">
           <h1 className="text-3xl font-bold">Representative not found</h1>
 
