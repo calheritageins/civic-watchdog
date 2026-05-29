@@ -1,395 +1,358 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import {
-  SignInButton,
-  SignUpButton,
-  UserButton,
-  useUser,
-} from "@clerk/nextjs";
+  FileText,
+  Users,
+  Crosshair,
+  ShieldCheck,
+  MapPin,
+  BarChart3,
+} from "lucide-react";
 
-type Representative = {
-  id?: number;
-  fullName: string;
-  party: string | null;
-  website: string | null;
-  phone: string | null;
-};
-
-type Senator = Representative;
-
-type Bill = {
-  id: number;
-  congress: number;
-  billType: string;
-  billNumber: string;
-  title: string;
-  summary: string | null;
-  aiSummary: string | null;
-  status: string | null;
-};
-
-type AlignmentItem = {
-  representative: {
-    fullName: string;
-    chamber: string;
-    party: string | null;
-  };
-  alignmentPercent: number;
-  participationPercent: number;
-  comparableVotes: number;
-  matchingVotes: number;
-  totalTrackedBills: number;
-};
-
-type AlignmentResponse = {
-  alignments: AlignmentItem[];
-};
-
-export default function Home() {
-  const { isSignedIn } = useUser();
-
-  const [form, setForm] = useState({
-    fullName: "",
-    address1: "",
-    city: "",
-    state: "",
-    zip: "",
-  });
-
-  const [savedUserId, setSavedUserId] = useState<number | null>(null);
-  const [representative, setRepresentative] =
-    useState<Representative | null>(null);
-  const [senators, setSenators] = useState<Senator[]>([]);
-  const [alignment, setAlignment] = useState<AlignmentResponse | null>(null);
-
-  useEffect(() => {
-    async function loadInitialData() {
-      if (!isSignedIn) return;
-
-      const meResponse = await fetch("/api/me");
-
-      if (!meResponse.ok) {
-        console.log("No saved profile found.");
-        return;
-      }
-
-      const meData = await meResponse.json();
-
-      if (meData.latestAddress) {
-        setForm({
-          fullName: meData.latestAddress.fullName || "",
-          address1: meData.latestAddress.address1 || "",
-          city: meData.latestAddress.city || "",
-          state: meData.latestAddress.state || "",
-          zip: meData.latestAddress.zip || "",
-        });
-
-        setSavedUserId(meData.latestAddress.id);
-      }
-
-      setRepresentative(meData.representative || null);
-      setSenators(meData.senators || []);
-
-      await loadAlignment();
-    }
-
-    loadInitialData();
-  }, [isSignedIn]);
-
-  async function loadAlignment() {
-    const response = await fetch("/api/alignment");
-
-    if (!response.ok) {
-      console.log("Alignment not available yet.");
-      return;
-    }
-
-    const data = await response.json();
-    setAlignment(data);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    const response = await fetch("/api/address", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
-
-    const data = await response.json();
-
-    setSavedUserId(data.saved.id);
-    setRepresentative(data.representative);
-    setSenators(data.senators || []);
-
-    await loadAlignment();
-  }
-
+export default function HomePage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#06111f] px-6 py-8 text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(250,204,21,0.06),transparent_30%)]" />
-
-      <div className="relative mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between rounded-3xl border border-white/10 bg-[#071827]/90 p-6 shadow-2xl backdrop-blur">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight">
-              Civic Watchdog
-            </h1>
-            <p className="text-sm text-white/60">
-              Track your representatives, bills, votes, and alignment.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {!isSignedIn && (
-              <>
-                <SignInButton mode="modal">
-                  <button className="rounded-2xl bg-yellow-400 px-4 py-2 font-bold text-black shadow-lg shadow-yellow-400/20 transition hover:scale-[1.02]">
-                    Sign In
-                  </button>
-                </SignInButton>
-
-                <SignUpButton mode="modal">
-                  <button className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-semibold text-white transition hover:bg-white/10">
-                    Sign Up
-                  </button>
-                </SignUpButton>
-              </>
-            )}
-
-            {isSignedIn && <UserButton />}
-          </div>
+    <main className="min-h-screen bg-[#06111f] text-white">
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1575320181282-9afab399332c?q=80&w=1800&auto=format&fit=crop"
+            alt="United States Capitol"
+            className="h-full w-full object-cover opacity-25"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#06111f] via-[#06111f]/85 to-[#06111f]/50" />
         </div>
 
-        <div className="relative mb-8 overflow-hidden rounded-3xl border border-white/10 bg-[#071827] shadow-2xl">
-          <img
-            src="https://images.unsplash.com/photo-1575320181282-9afab399332c?q=80&w=1600&auto=format&fit=crop"
-            alt="US Capitol"
-            className="h-[380px] w-full object-cover opacity-35"
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-r from-[#06111f] via-[#06111f]/80 to-transparent" />
-
-          <div className="absolute inset-0 flex items-center">
-            <div className="max-w-3xl p-10">
-              <p className="text-sm uppercase tracking-[0.3em] text-yellow-300">
-                Civic Intelligence Platform
-              </p>
-
-              <h1 className="mt-4 max-w-3xl text-4xl font-black leading-tight md:text-6xl">
-                You’re in charge of your democracy.
+        <header className="relative z-10 border-b border-white/10">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
+            <div>
+              <h1 className="text-2xl font-black tracking-wide">
+                CIVIC WATCHDOG
               </h1>
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-yellow-300">
+                Citizen Intelligence Network
+              </p>
+            </div>
 
-              <p className="mt-6 max-w-2xl text-lg text-white/70">
-                Track legislation. Monitor representatives. Measure alignment.
-                Hold power accountable.
+            <nav className="hidden items-center gap-8 text-sm font-semibold md:flex">
+              <a href="#how" className="text-white/80 hover:text-white">
+                How It Works
+              </a>
+              <Link href="/bills" className="text-white/80 hover:text-white">
+                Bills
+              </Link>
+              <Link
+                href="/representatives"
+                className="text-white/80 hover:text-white"
+              >
+                Representatives
+              </Link>
+              <Link
+                href="/dashboard"
+                className="rounded-xl border border-white/20 px-4 py-2 text-white"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/dashboard"
+                className="rounded-xl bg-yellow-400 px-4 py-2 font-black text-black"
+              >
+                Sign Up
+              </Link>
+            </nav>
+          </div>
+        </header>
+
+        <div className="relative z-10 mx-auto max-w-7xl px-6 py-20">
+          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <h2 className="text-5xl font-black uppercase leading-tight md:text-7xl">
+                Government Works For You.
+                <span className="block text-yellow-300">So Watch It.</span>
+              </h2>
+
+              <p className="mt-8 max-w-2xl text-xl leading-9 text-white/75">
+                Understand bills. Track votes. See how closely your
+                representatives align with you.
               </p>
 
-              <div className="mt-8 flex gap-4">
+              <div className="mt-10 flex flex-wrap gap-4">
                 <Link
-                  href="/representatives"
-                  className="rounded-2xl bg-yellow-400 px-6 py-4 font-bold text-black"
+                  href="/dashboard"
+                  className="rounded-2xl bg-yellow-400 px-7 py-4 font-black text-black shadow-2xl shadow-yellow-400/20"
                 >
-                  View Representatives
+                  Find My Representatives
                 </Link>
 
                 <Link
                   href="/bills"
-                  className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white"
+                  className="rounded-2xl border border-white/20 bg-white/5 px-7 py-4 font-bold text-white"
                 >
-                  Explore Bills
+                  Explore Congress
                 </Link>
               </div>
             </div>
-          </div>
-        </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-3xl border border-white/10 bg-[#071827]/90 p-8 shadow-2xl backdrop-blur"
-        >
-          <div className="mb-6 flex gap-3">
-            <Link
-              href="/representatives"
-              className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 font-semibold transition hover:bg-white/10"
-            >
-              Browse Representatives
-            </Link>
+            <div className="hidden lg:block">
+              <div className="relative rounded-3xl border border-white/10 bg-[#081a2e]/70 p-8 shadow-2xl backdrop-blur">
+                <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-yellow-400/10 blur-3xl" />
 
-            <Link
-              href="/bills"
-              className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 font-semibold transition hover:bg-white/10"
-            >
-              Browse Bills
-            </Link>
-          </div>
+                <div className="rounded-3xl border border-white/10 bg-[#06111f]/80 p-6">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-5">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.25em] text-yellow-300">
+                        Oversight Scan
+                      </p>
+                      <h3 className="mt-2 text-2xl font-black">
+                        Capitol Intelligence
+                      </h3>
+                    </div>
 
-          <h1 className="mb-6 text-4xl font-bold">Find My Representatives</h1>
+                    <ShieldCheck className="h-9 w-9 text-yellow-300" />
+                  </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {[
-              ["fullName", "Full Name"],
-              ["address1", "Address"],
-              ["city", "City"],
-              ["state", "State"],
-              ["zip", "ZIP"],
-            ].map(([key, placeholder]) => (
-              <input
-                key={key}
-                placeholder={placeholder}
-                className="rounded-2xl border border-white/10 bg-[#081a2e] p-4 text-white placeholder:text-white/40 focus:border-yellow-400/40 focus:outline-none"
-                value={form[key as keyof typeof form]}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    [key]: e.target.value,
-                  })
-                }
-              />
-            ))}
+                  <div className="mt-6 grid gap-4">
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/60">
+                          Alignment Signal
+                        </span>
+                        <span className="font-black text-green-400">78%</span>
+                      </div>
+                      <div className="mt-3 h-2 rounded-full bg-white/10">
+                        <div className="h-2 w-[78%] rounded-full bg-green-400" />
+                      </div>
+                    </div>
 
-            <button
-              type="submit"
-              className="rounded-2xl bg-yellow-400 p-4 font-bold text-black shadow-lg shadow-yellow-400/20 transition hover:scale-[1.02]"
-            >
-              Lookup Representatives
-            </button>
-          </div>
-        </form>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/60">Tracked Bills</span>
+                        <span className="font-black text-yellow-300">142</span>
+                      </div>
+                      <div className="mt-3 h-2 rounded-full bg-white/10">
+                        <div className="h-2 w-[64%] rounded-full bg-yellow-400" />
+                      </div>
+                    </div>
 
-        {alignment?.alignments?.length ? (
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            {alignment.alignments.map((item) => (
-              <div
-                key={item.representative.fullName}
-                className="rounded-3xl border border-white/10 bg-[#081a2e] p-6 shadow-xl"
-              >
-                <h2 className="text-2xl font-black tracking-tight">
-                  {item.representative.fullName}
-                </h2>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
+                        <MapPin className="mx-auto h-6 w-6 text-yellow-300" />
+                        <p className="mt-2 text-xs text-white/50">District</p>
+                      </div>
 
-                <p className="mt-1 text-sm text-white/60">
-                  {item.representative.chamber} •{" "}
-                  {item.representative.party || "N/A"}
-                </p>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
+                        <Users className="mx-auto h-6 w-6 text-yellow-300" />
+                        <p className="mt-2 text-xs text-white/50">Reps</p>
+                      </div>
 
-                <div className="mt-6 flex items-center justify-center">
-                  <div className="flex h-36 w-36 items-center justify-center rounded-full border-[12px] border-yellow-400/80 bg-yellow-400/10 shadow-[0_0_35px_rgba(250,204,21,0.25)]">
-                    <span className="text-4xl font-black text-yellow-300">
-                      {item.alignmentPercent}%
-                    </span>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
+                        <BarChart3 className="mx-auto h-6 w-6 text-yellow-300" />
+                        <p className="mt-2 text-xs text-white/50">Votes</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
 
-                <p className="mt-6 text-sm text-white/70">
-                  Alignment on {item.matchingVotes} out of{" "}
-                  {item.comparableVotes} comparable votes.
-                </p>
+          <div className="mt-16 grid gap-4 rounded-3xl border border-white/10 bg-[#081a2e]/80 p-6 backdrop-blur md:grid-cols-4">
+            {[
+              [FileText, "Track Legislation", "Stay informed on active bills"],
+              [Users, "Monitor Representatives", "View voting records"],
+              [Crosshair, "Measure Alignment", "Compare votes to your views"],
+              [ShieldCheck, "Hold Power Accountable", "Transparency drives action"],
+            ].map(([Icon, title, text]) => (
+              <div
+                key={String(title)}
+                className="border-white/10 p-4 md:border-r last:border-r-0"
+              >
+                <Icon className="h-10 w-10 text-yellow-300" />
 
-                <p className="mt-2 text-sm text-white/70">
-                  Participation: {item.participationPercent}% (
-                  {item.comparableVotes} of {item.totalTrackedBills} tracked
-                  votes)
+                <h3 className="mt-4 font-black uppercase">
+                  {title as string}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-white/65">
+                  {text as string}
                 </p>
               </div>
             ))}
           </div>
-        ) : null}
+        </div>
+      </section>
 
-        {representative && (
-          <div className="mt-8 rounded-3xl border border-white/10 bg-[#081a2e] p-6 shadow-xl">
-            <h2 className="text-3xl font-black tracking-tight">
-              Your House Representative
+      <section className="mx-auto max-w-7xl px-6 py-12">
+        <div className="rounded-3xl border border-white/10 bg-[#071827] p-8 shadow-2xl">
+          <div className="text-center">
+            <h2 className="text-4xl font-black">
+              Your Government. Your Dashboard.
             </h2>
-
-            <p className="mt-4 text-xl font-semibold">
-              {representative.fullName}
+            <p className="mt-3 text-white/60">
+              Real data. Clear insights. Total transparency.
             </p>
-
-            <p className="mt-2 text-white/70">
-              <strong>Party:</strong> {representative.party || "N/A"}
-            </p>
-
-            <p className="text-white/70">
-              <strong>Phone:</strong> {representative.phone || "N/A"}
-            </p>
-
-            <div className="mt-4 flex gap-3">
-              {representative.phone && (
-                <a
-                  href={`tel:${representative.phone}`}
-                  className="rounded-2xl bg-green-600 px-4 py-2 font-semibold text-white transition hover:scale-[1.02]"
-                >
-                  Call Office
-                </a>
-              )}
-
-              {representative.website && (
-                <a
-                  href={representative.website}
-                  target="_blank"
-                  className="rounded-2xl bg-blue-600 px-4 py-2 font-semibold text-white"
-                >
-                  Official Website
-                </a>
-              )}
-            </div>
           </div>
-        )}
 
-        {senators.length > 0 && (
-          <div className="mt-8 rounded-3xl border border-white/10 bg-[#081a2e] p-6 shadow-xl">
-            <h2 className="mb-4 text-3xl font-black tracking-tight">
-              Your U.S. Senators
-            </h2>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {senators.map((senator) => (
-                <div
-                  key={senator.fullName}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4"
-                >
-                  <p className="text-xl font-semibold">{senator.fullName}</p>
-
-                  <p className="mt-2 text-white/70">
-                    <strong>Party:</strong> {senator.party || "N/A"}
-                  </p>
-
-                  <p className="text-white/70">
-                    <strong>Phone:</strong> {senator.phone || "N/A"}
-                  </p>
-
-                  <div className="mt-4 flex gap-3">
-                    {senator.phone && (
-                      <a
-                        href={`tel:${senator.phone}`}
-                        className="rounded-2xl bg-green-600 px-4 py-2 font-semibold text-white transition hover:scale-[1.02]"
-                      >
-                        Call Office
-                      </a>
-                    )}
-
-                    {senator.website && (
-                      <a
-                        href={senator.website}
-                        target="_blank"
-                        className="rounded-2xl bg-blue-600 px-4 py-2 font-semibold text-white"
-                      >
-                        Official Website
-                      </a>
-                    )}
+          <div className="mt-8 grid gap-6 lg:grid-cols-3">
+            <div className="rounded-3xl border border-white/10 bg-[#081a2e] p-6">
+              <h3 className="font-black uppercase">Your Representatives</h3>
+              <div className="mt-6 space-y-5">
+                {[
+                  "Rep. Jamie Raskin",
+                  "Sen. Chris Van Hollen",
+                  "Sen. Angela Alsobrooks",
+                ].map((name, index) => (
+                  <div key={name} className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold">{name}</p>
+                      <p className="text-sm text-white/50">
+                        {index === 0
+                          ? "House Representative"
+                          : "United States Senate"}
+                      </p>
+                    </div>
+                    <div className="rounded-full border-4 border-green-400 px-3 py-2 font-black text-green-400">
+                      {index === 0 ? "85%" : index === 1 ? "78%" : "72%"}
+                    </div>
                   </div>
+                ))}
+              </div>
+              <Link
+                href="/representatives"
+                className="mt-6 inline-block font-bold text-yellow-300"
+              >
+                View all representatives →
+              </Link>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-[#081a2e] p-6 text-center">
+              <h3 className="font-black uppercase">Overall Alignment</h3>
+              <div className="mx-auto mt-8 flex h-56 w-56 items-center justify-center rounded-full border-[16px] border-green-400/80 bg-green-400/5">
+                <div>
+                  <p className="text-6xl font-black">78%</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-white/50">
+                    Average Alignment
+                  </p>
                 </div>
-              ))}
+              </div>
+              <p className="mt-6 text-sm text-white/60">
+                Based on comparable votes.
+              </p>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-[#081a2e] p-6">
+              <h3 className="font-black uppercase">Recent Bill Vote</h3>
+              <p className="mt-6 rounded-xl bg-white/5 px-3 py-2 text-sm text-white/60">
+                H.R. 5376
+              </p>
+              <h4 className="mt-4 text-2xl font-black">
+                Veterans’ Health Care Improvement Act
+              </h4>
+              <p className="mt-3 text-green-400">Status: Passed House</p>
+              <div className="mt-6 space-y-3">
+                <div className="flex justify-between rounded-xl border border-white/10 p-4">
+                  <span>Your Vote</span>
+                  <span className="font-black text-green-400">Support</span>
+                </div>
+                <div className="flex justify-between rounded-xl border border-white/10 p-4">
+                  <span>Your Rep. Vote</span>
+                  <span className="font-black text-green-400">Support</span>
+                </div>
+              </div>
+              <Link
+                href="/bills"
+                className="mt-6 inline-block font-bold text-yellow-300"
+              >
+                View all tracked bills →
+              </Link>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      <section id="how" className="mx-auto max-w-7xl px-6 py-10">
+        <div className="rounded-3xl border border-white/10 bg-[#071827] p-8">
+          <h2 className="text-center text-4xl font-black">
+            How Civic Watchdog Works
+          </h2>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-4">
+            {[
+              [
+                "1",
+                "Tell Us Where You Live",
+                "We find your official representatives.",
+              ],
+              [
+                "2",
+                "Track What Matters",
+                "We monitor bills, votes, and participation.",
+              ],
+              [
+                "3",
+                "Compare & Analyze",
+                "We calculate alignment and key metrics.",
+              ],
+              [
+                "4",
+                "Hold Power Accountable",
+                "You stay informed and government gets better.",
+              ],
+            ].map(([num, title, text]) => (
+              <div
+                key={num}
+                className="rounded-2xl border border-white/10 bg-white/5 p-6"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-400 font-black text-black">
+                  {num}
+                </div>
+                <h3 className="mt-5 font-black">{title}</h3>
+                <p className="mt-3 text-sm leading-6 text-white/60">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 py-10">
+        <div className="grid gap-6 rounded-3xl border border-white/10 bg-[#071827] p-10 lg:grid-cols-2 lg:items-center">
+          <div>
+            <h2 className="text-4xl font-black">
+              Democracy works best when citizens are informed.
+            </h2>
+            <p className="mt-4 text-2xl font-black text-yellow-300">
+              Be informed. Be heard. Be the watchdog.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+            <h3 className="text-3xl font-black">Get Started in Seconds</h3>
+            <p className="mt-3 text-white/60">
+              Join citizens using data to build a better democracy.
+            </p>
+            <Link
+              href="/dashboard"
+              className="mt-6 inline-block rounded-2xl bg-yellow-400 px-8 py-4 font-black text-black"
+            >
+              Create Your Account
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <footer className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-10 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-2xl font-black">CIVIC WATCHDOG</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-yellow-300">
+            Citizen Intelligence Network
+          </p>
+        </div>
+
+        <div className="flex gap-6 text-sm text-white/60">
+          <a>About</a>
+          <a>Privacy</a>
+          <a>Terms</a>
+          <a>Contact</a>
+        </div>
+      </footer>
     </main>
   );
 }

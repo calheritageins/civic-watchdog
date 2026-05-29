@@ -10,16 +10,19 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({ adapter });
 
 function userMatchesRep(userPosition: string, repPosition: string) {
+  const user = userPosition.toLowerCase();
+  const rep = repPosition.toLowerCase();
+
   if (
-    userPosition === "Support" &&
-    (repPosition === "Yea" || repPosition === "Support")
+    user === "support" &&
+    (rep === "yea" || rep === "support" || rep === "yes")
   ) {
     return true;
   }
 
   if (
-    userPosition === "Oppose" &&
-    (repPosition === "Nay" || repPosition === "Oppose")
+    user === "oppose" &&
+    (rep === "nay" || rep === "oppose" || rep === "no")
   ) {
     return true;
   }
